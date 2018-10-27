@@ -34,6 +34,19 @@ extension ObservableType {
         return TakeUntilPredicate(source: asObservable(), predicate: predicate)
     }
 }
+
+extension ObservableType where E: Comparable {
+    /**
+     Returns elements from an observable sequence until the specific element is emitted.
+
+     - seealso: [takeUntil operator on reactivex.io](http://reactivex.io/documentation/operators/takeuntil.html)
+
+     - parameter element: An element we wish to be emitted.
+     - returns: An observable sequence that contains the elements from the input sequence that occur before the provided element has been emitted.
+     */
+    public func takeUntil(_ element: E) -> Observable<E> {
+        return TakeUntilPredicate(source: asObservable(), predicate: { $0 == element })
+    }
 }
 
 // MARK: - TakeUntil Observable
