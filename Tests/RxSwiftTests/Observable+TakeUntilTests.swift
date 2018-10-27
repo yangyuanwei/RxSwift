@@ -526,3 +526,112 @@ extension ObservableTakeUntilTest {
         ])
     }
 }
+
+// MARK: TakeUntil Element Tests
+extension ObservableTakeUntilTest {
+    func testTakeUntilElement_Preempt_SomeData_Next() {
+        let scheduler = TestScheduler(initialClock: 0)
+
+        let l = scheduler.createHotObservable([
+            .next(150, 1),
+            .next(210, 2),
+            .next(220, 3),
+            .next(230, 4),
+            .next(240, 5),
+            .completed(250)
+            ])
+
+        let res = scheduler.start {
+            l.takeUntil(4)
+        }
+
+        XCTAssertEqual(res.events, [
+            .next(210, 2),
+            .next(220, 3),
+            .completed(230)
+        ])
+
+        XCTAssertEqual(l.subscriptions, [
+            Subscription(200, 230)
+        ])
+    }
+
+    func testTakeUntilElement_Preempt_SomeData_Error() {
+        let scheduler = TestScheduler(initialClock: 0)
+
+        let l = scheduler.createHotObservable([
+            .next(150, 1),
+            .next(210, 2),
+            .next(220, 3),
+            .error(225, testError)
+        ])
+
+        let res = scheduler.start {
+            l.takeUntil(4)
+        }
+
+        XCTAssertEqual(res.events, [
+            .next(210, 2),
+            .next(220, 3),
+            .error(225, testError)
+        ])
+
+        XCTAssertEqual(l.subscriptions, [
+            Subscription(200, 225)
+        ])
+    }
+
+    func testTakeUntilElement_AlwaysFailingPredicate() {
+        let scheduler = TestScheduler(initialClock: 0)
+
+        let l = scheduler.createHotObservable([
+            .next(150, 1),
+            .next(210, 2),
+            .next(220, 3),
+            .next(230, 4),
+            .next(240, 5),
+            .completed(250)
+        ])
+
+        let res = scheduler.start {
+            l.takeUntil(-1)
+        }
+
+        XCTAssertEqual(res.events, [
+            .next(210, 2),
+            .next(220, 3),
+            .next(230, 4),
+            .next(240, 5),
+            .completed(250)
+        ])
+
+        XCTAssertEqual(l.subscriptions, [
+            Subscription(200, 250)
+        ])
+    }
+
+    func testTakeUntilElement_ImmediatelySuccessfulPredicate() {
+        let scheduler = TestScheduler(initialClock: 0)
+
+        let l = scheduler.createHotObservable([
+            .next(150, 1),
+            .next(210, 2),
+            .next(220, 3),
+            .next(230, 4),
+            .next(240, 5),
+            .completed(250)
+        ])
+
+        let res = scheduler.start {
+            l.takeUntil(2)
+        }
+
+        XCTAssertEqual(res.events, [
+            .completed(210)
+        ])
+
+        XCTAssertEqual(l.subscriptions, [
+            Subscription(200, 210)
+        ])
+    }
+}
